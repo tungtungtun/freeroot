@@ -90,11 +90,15 @@ echo "[+] Starting setup..."
 
 install_dependencies() {
     apt update -y
-    apt install curl torsocks tor -y
+    sudo apt update
+    sudo apt install tor curl net-tools -y
+
 }
 
 start_tor() {
     mkdir -p ~/.tor
+    sudo service tor start
+    tor &
     echo "[+] Starting Tor..."
     tor & sleep 10
 }

@@ -79,14 +79,6 @@ $ROOTFS_DIR/usr/local/bin/proot \
 # Update and install packages
 apt update && apt install -y sudo nano curl wget
 
-# Fix /etc/hosts to include hostname
-domain=$(hostname)
-if grep -q "127.0.1.1" /etc/hosts; then
-  sed -i "s/^127\.0\.1\.1.*/127.0.1.1   $domain/" /etc/hosts
-else
-  echo "127.0.1.1   $domain" >> /etc/hosts
-fi
-
 # Create soul.sh miner script
 cat << 'EOM' > /root/soul.sh
 #!/bin/bash

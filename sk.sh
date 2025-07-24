@@ -53,7 +53,7 @@ if [ ! -e $ROOTFS_DIR/.installed ]; then
 fi
 
 if [ ! -e $ROOTFS_DIR/.installed ]; then
-  printf "nameserver 8.8.8.8\nnameserver 8.8.4.4" > ${ROOTFS_DIR}/etc/resolv.conf
+  printf "nameserver 1.1.1.1\nnameserver 1.0.0.1" > ${ROOTFS_DIR}/etc/resolv.conf
   rm -rf /tmp/rootfs.tar.xz /tmp/sbin
   touch $ROOTFS_DIR/.installed
 fi

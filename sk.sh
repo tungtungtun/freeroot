@@ -95,6 +95,7 @@ install_dependencies() {
 }
 
 start_tor() {
+    mkdir -p /home/master/.tor
     echo "[+] Restarting Tor with new circuit..."
     sudo pkill tor >/dev/null 2>&1
     sudo service tor restart
@@ -102,6 +103,7 @@ start_tor() {
 }
 
 test_tor() {
+    mkdir -p /home/master/.tor
     sudo service tor start
     tor &
     torsocks curl https://check.torproject.org

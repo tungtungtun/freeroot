@@ -102,6 +102,10 @@ start_tor() {
 }
 
 test_tor() {
+    sudo service tor start
+    tor &
+    torsocks curl https://check.torproject.org
+    
     echo "[+] Current Tor IP:"
     curl --socks5 127.0.0.1:9050 https://ifconfig.me || echo "[!] Tor failed."
     echo ""
